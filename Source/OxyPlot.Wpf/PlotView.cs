@@ -147,11 +147,10 @@ namespace OxyPlot.Wpf
 
         /// <summary>
         /// Returns a reference to the visual object that hosts the dependency object in the visual tree.
-        /// </summary>
+        /// </summary>  
         /// <returns> The host window from the visual tree.</returns>
         private Visual GetAncestorVisualFromVisualTree(DependencyObject startElement)
         {
-            
             DependencyObject child = startElement;
             DependencyObject parent = VisualTreeHelper.GetParent(child);
             while (parent != null)

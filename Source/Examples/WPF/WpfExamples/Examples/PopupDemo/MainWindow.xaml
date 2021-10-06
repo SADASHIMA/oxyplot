@@ -1,0 +1,10 @@
+﻿<Window x:Class="PopupDemo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf" Title="ScatterDemo" Height="480" Width="640">
+    <Grid x:Name="MainGrid">
+        <CheckBox IsChecked="{Binding ShowPopup}">Show Popup</CheckBox>
+        <Popup PlacementTarget="{Binding ElementName=MainGrid}" Placement="Center" Width="500" Height="400" IsOpen="{Binding ShowPopup}">
+            <oxy:PlotView Model="{Binding PopupModel}"/>
+        </Popup>
+    </Grid>
+</Window>

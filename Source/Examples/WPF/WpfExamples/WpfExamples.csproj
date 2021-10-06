@@ -52,4 +52,9 @@
     <None Include="ReadMe.txt" />
     <Resource Include="Examples\HistogramDemo\hare.jpg" />
   </ItemGroup>
+  <ItemGroup>
+    <Page Update="Examples\PopupDemo\MainWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
+  </ItemGroup>
 </Project>
