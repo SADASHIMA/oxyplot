@@ -42,6 +42,13 @@
                             <Rectangle Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}" 
                                        StrokeThickness="{TemplateBinding BorderThickness}" RadiusX="3" RadiusY="3" SnapsToDevicePixels="True"/>
                             <ContentPresenter Margin="8,5" />
+                            <Popup Width="120" Height="90" IsOpen="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Grid}, Mode=OneWay}">
+                                <Grid>
+                                    <Viewbox>
+                                        <oxySkia:PlotView Width="600" Height="450" Model="{Binding PlotModel}"/>
+                                    </Viewbox>
+                                </Grid>
+                            </Popup>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <MultiTrigger>
