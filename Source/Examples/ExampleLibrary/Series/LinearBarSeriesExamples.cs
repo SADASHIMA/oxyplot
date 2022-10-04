@@ -50,10 +50,22 @@
         [Example("With negative colors (logaritmic)")]
         public static PlotModel WithNegativeColorsLogarithmic()
         {
-            return CreateWithNegativeColors(true);
+            return CreateWithNegativeColors(logarithmic: true);
         }
 
-        public static PlotModel CreateWithNegativeColors(bool logarithmic = false)
+        [Example("With baseline")]
+        public static PlotModel WithBaseline()
+        {
+            return CreateWithNegativeColors(baseLine: 50);
+        }
+
+        [Example("With baseline (logaritmic)")]
+        public static PlotModel WithBaselineLogarithmic()
+        {
+            return CreateWithNegativeColors(logarithmic: true, baseLine: 50);
+        }
+
+        public static PlotModel CreateWithNegativeColors(bool logarithmic = false, double baseLine = double.NaN)
         {
             var model = new PlotModel { Title = logarithmic ? "LinearBarSeries with stroke (logarithmic)" : "LinearBarSeries with stroke" };
             model.Axes.Add(new LinearAxis { Position = AxisPosition.Bottom });
@@ -65,6 +77,7 @@
             linearBarSeries.NegativeFillColor = OxyColor.Parse("#45BF360C");
             linearBarSeries.NegativeStrokeColor = OxyColor.Parse("#BF360C");
             linearBarSeries.StrokeThickness = 1;
+            linearBarSeries.BaseLine = baseLine;
             model.Series.Add(linearBarSeries);
 
             return model;

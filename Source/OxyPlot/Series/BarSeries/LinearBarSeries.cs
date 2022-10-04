@@ -294,7 +294,7 @@ namespace OxyPlot.Series
                 }
 
                 var screenPoint = this.Transform(actualPoint) - widthVector;
-                var basePoint = this.Transform(new DataPoint(actualPoint.X, this.GetBasePointY())) + widthVector;
+                var basePoint = this.Transform(new DataPoint(actualPoint.X, this.GetBaseLineOrAutomaticValue(this.YAxis))) + widthVector;
                 var rectangle = new OxyRect(basePoint, screenPoint);
                 this.rectangles.Add(rectangle);
                 this.rectanglesPointIndexes.Add(pointIndex);
@@ -314,7 +314,7 @@ namespace OxyPlot.Series
         {
             if (this.YAxis.IsLogarithmic())
                 return LogarithmicAxis.LowestValidRoundtripValue;
-            return 0;
+            return this.GetBaseLineOrAutomaticValue(this.YAxis);
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace OxyPlot.Series
         /// <returns>The bar colors</returns>
         private BarColors GetBarColors(double y)
         {
-            var positive = y >= 0.0;
+            var positive = y >= this.GetBaseLineOrAutomaticValue(this.YAxis);
             var fillColor = (positive || this.NegativeFillColor.IsUndefined()) ? this.GetSelectableFillColor(this.ActualColor) : this.NegativeFillColor;
             var strokeColor = (positive || this.NegativeStrokeColor.IsUndefined()) ? this.StrokeColor : this.NegativeStrokeColor;
 
