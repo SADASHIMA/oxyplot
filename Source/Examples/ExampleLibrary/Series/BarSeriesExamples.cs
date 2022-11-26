@@ -24,42 +24,35 @@ namespace ExampleLibrary
         [Example("With labels")]
         public static PlotModel WithLabels()
         {
-            var model = new PlotModel
+            var model = new PlotModel();
+
+            var categoryAxis = new CategoryAxis { Position = AxisPosition.Bottom, Key = "y1" };
+            var valueAxis1 = new LinearAxis
             {
-                Title = "With labels",
+                Title = "Value Axis 1",
+                Position = AxisPosition.Left,
+                MinimumPadding = 0.06,
+                MaximumPadding = 0.06,
+                ExtraGridlines = new[] { 0d },
+                Key = "x1"
             };
+            model.Axes.Add(categoryAxis);
+            model.Axes.Add(valueAxis1);
+
+            var series = new List<BarSeries>
+          {
+              new BarSeries() { XAxisKey = "x1", YAxisKey = "y1" },
+              new BarSeries() { XAxisKey = "x1", YAxisKey = "y1" },
+          };
 
             var rnd = new Random(1);
-            var series = new List<BarSeries>
-            {
-                new BarSeries { LabelFormatString = "{0}", LabelPlacement = LabelPlacement.Base, Title = "Base" },
-                new BarSeries { LabelFormatString = "{0}", LabelPlacement = LabelPlacement.Inside, Title = "Inside" },
-                new BarSeries { LabelFormatString = "{0}", LabelPlacement = LabelPlacement.Middle, Title = "Middle" },
-                new BarSeries { LabelFormatString = "{0}", LabelPlacement = LabelPlacement.Outside, Title = "Outside" },
-            };
-
-            for (int i = 0; i < 4; i++)
-            {
-                foreach (var s in series)
-                {
-                    s.Items.Add(new BarItem() { Value = rnd.Next(-100, 100) });
-                }
-            }
-
-            var categoryAxis = new CategoryAxis { Position = AxisPosition.Left };
-            categoryAxis.Labels.Add("Category A");
-            categoryAxis.Labels.Add("Category B");
-            categoryAxis.Labels.Add("Category C");
-            categoryAxis.Labels.Add("Category D");
-            var valueAxis = new LinearAxis { Position = AxisPosition.Bottom, MinimumPadding = 0.06, MaximumPadding = 0.06, ExtraGridlines = new[] { 0d } };
-            
             foreach (var s in series)
             {
+                for (var i = 0; i < 4; i++)
+                    s.Items.Add(new BarItem() { Value = rnd.Next(0, 100) });
                 model.Series.Add(s);
             }
 
-            model.Axes.Add(categoryAxis);
-            model.Axes.Add(valueAxis);
             return model;
         }
 

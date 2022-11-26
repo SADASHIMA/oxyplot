@@ -49,7 +49,7 @@ namespace ExampleLibrary
                 Maximum = 5.25,
                 MajorStep = 1,
                 MinorStep = 0.25,
-                TickStyle = TickStyle.Inside
+                TickStyle = TickStyle.Inside,
             });
             plot.Series.Add(CreateNormalDistributionSeries(-5, 5, 0, 0.2));
             plot.Series.Add(CreateNormalDistributionSeries(-5, 5, 0, 1));

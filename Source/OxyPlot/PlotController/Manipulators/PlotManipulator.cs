@@ -106,8 +106,8 @@ namespace OxyPlot
                 yaxis = null;
             }
 
-            this.XAxis = xaxis;
-            this.YAxis = yaxis;
+            this.XAxis = xaxis ?? this.PlotView.ActualModel.DefaultXAxis;
+            this.YAxis = yaxis ?? this.PlotView.ActualModel.DefaultYAxis;
         }
     }
 }
