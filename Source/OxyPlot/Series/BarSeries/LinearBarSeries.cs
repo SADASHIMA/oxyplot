@@ -146,8 +146,8 @@ namespace OxyPlot.Series
             {
                 this.Title,
                 this.XAxis.Title ?? "X",
-                this.XAxis.GetValue(dataPoint.X), 
-                this.YAxis.Title ?? "Y", 
+                this.XAxis.GetValue(dataPoint.X),
+                this.YAxis.Title ?? "Y",
                 this.YAxis.GetValue(dataPoint.Y),
             };
 
@@ -252,45 +252,67 @@ namespace OxyPlot.Series
         /// <returns>the rectangle index</returns>
         private int FindRectangleIndex(ScreenPoint point)
         {
-            IComparer<OxyRect> comparer;
+            int bottom = 0;
+            int top = this.rectangles.Count - 1;
+
+            Func<OxyRect, int> comparer;
             if (this.IsTransposed())
             {
-                comparer = ComparerHelper.CreateComparer<OxyRect>(
-                    (x, y) =>
+                comparer =
+                    r =>
+                    {
+                        if (r.Bottom < point.Y)
                         {
-                            if (x.Bottom < point.Y)
-                            {
-                                return 1;
-                            }
+                            return 1;
+                        }
 
-                            if (x.Top > point.Y)
-                            {
-                                return -1;
-                            }
+                        if (r.Top > point.Y)
+                        {
+                            return -1;
+                        }
 
-                            return 0;
-                        });
+                        return 0;
+                    };
             }
             else
             {
-                comparer = ComparerHelper.CreateComparer<OxyRect>(
-                    (x, y) =>
+                comparer =
+                    r =>
+                    {
+                        if (r.Right < point.X)
                         {
-                            if (x.Right < point.X)
-                            {
-                                return -1;
-                            }
+                            return -1;
+                        }
 
-                            if (x.Left > point.X)
-                            {
-                                return 1;
-                            }
+                        if (r.Left > point.X)
+                        {
+                            return 1;
+                        }
 
-                            return 0;
-                        });
+                        return 0;
+                    };
             }
 
-            return this.rectangles.BinarySearch(0, this.rectangles.Count, new OxyRect(), comparer);
+            // TODO: implement proper binary search and pull out into Helpers
+            while (bottom <= top)
+            {
+                int middle = bottom + (top - bottom) / 2;
+                var comparison = comparer(this.rectangles[middle]);
+
+                switch (comparison)
+                {
+                    case -1:
+                        bottom = middle + 1;
+                        break;
+                    case 0:
+                        return middle;
+                    case 1:
+                        top = middle - 1;
+                        break;
+                }
+            }
+
+            return -1; // not found
         }
 
         /// <summary>
@@ -322,10 +344,10 @@ namespace OxyPlot.Series
                 var barColors = this.GetBarColors(actualPoint.Y);
 
                 rc.DrawRectangle(
-                    rectangle, 
-                    barColors.FillColor, 
-                    barColors.StrokeColor, 
-                    this.StrokeThickness, 
+                    rectangle,
+                    barColors.FillColor,
+                    barColors.StrokeColor,
+                    this.StrokeThickness,
                     this.EdgeRenderingMode.GetActual(EdgeRenderingMode.PreferSharpness));
             }
         }
