@@ -458,20 +458,15 @@ namespace OxyPlot.ImageSharp
             }
 
             var actualThickness = this.GetActualThickness(thickness, edgeRenderingMode);
-            if (dashArray is not null)
+            var actualDashArray = dashArray is null ? null : this.ConvertDashArray(dashArray, actualThickness);
+            var actualJointStyle = this.GetLineJointStyle(lineJoin);
+
+            var penOptions = new PenOptions(ToRgba32(stroke), actualThickness, actualDashArray)
             {
-                var actualDashArray = this.ConvertDashArray(dashArray, actualThickness);
-                var actualJointStyle = this.GetLineJointStyle(lineJoin);
+                JointStyle = actualJointStyle,
+            };
 
-                var penOptions = new PenOptions(ToRgba32(stroke), actualThickness, actualDashArray)
-                {
-                    JointStyle = actualJointStyle,
-                };
-
-                return new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray);
-            }
-
-            return new SolidPen(ToRgba32(stroke), actualThickness);
+            return new PatternPen(penOptions);
         }
 
         /// <summary>
