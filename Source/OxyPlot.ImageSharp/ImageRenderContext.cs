@@ -7,6 +7,8 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
+#nullable enable
+
 namespace OxyPlot.ImageSharp
 {
     using System;
@@ -158,7 +160,7 @@ namespace OxyPlot.ImageSharp
         }
 
         /// <inheritdoc/>
-        public override void DrawText(ScreenPoint p, string text, OxyColor fill, string fontFamily = null, double fontSize = 10, double fontWeight = 400, double rotation = 0, OxyPlot.HorizontalAlignment horizontalAlignment = OxyPlot.HorizontalAlignment.Left, OxyPlot.VerticalAlignment verticalAlignment = OxyPlot.VerticalAlignment.Top, OxySize? maxSize = null)
+        public override void DrawText(ScreenPoint p, string text, OxyColor fill, string? fontFamily = null, double fontSize = 10, double fontWeight = 400, double rotation = 0, OxyPlot.HorizontalAlignment horizontalAlignment = OxyPlot.HorizontalAlignment.Left, OxyPlot.VerticalAlignment verticalAlignment = OxyPlot.VerticalAlignment.Top, OxySize? maxSize = null)
         {
             if (text == null || !fill.IsVisible())
             {
@@ -176,7 +178,8 @@ namespace OxyPlot.ImageSharp
             var sin = (float)Math.Sin(rotation * Math.PI / 180.0);
 
             // measure bounds of the whole text (we only need the height)
-            var bounds = this.MeasureTextLoose(text, fontFamily, fontSize, fontWeight);
+            // TODO: should fontFamily be nullable?
+            var bounds = this.MeasureTextLoose(text, fontFamily!, fontSize, fontWeight);
             var boundsHeight = this.Convert(bounds.Height);
             var offsetHeight = new PointF(boundsHeight * -sin, boundsHeight * cos);
 
@@ -222,7 +225,8 @@ namespace OxyPlot.ImageSharp
                 }
 
                 // measure bounds of just the line (we only need the width)
-                var lineBounds = this.MeasureTextLoose(line, fontFamily, fontSize, fontWeight);
+                // TODO: should fontFamily be nullable?
+                var lineBounds = this.MeasureTextLoose(line, fontFamily!, fontSize, fontWeight);
                 var lineBoundsWidth = this.Convert(lineBounds.Width);
                 var offsetLineWidth = new PointF(lineBoundsWidth * cos, lineBoundsWidth * sin);
 
@@ -254,9 +258,10 @@ namespace OxyPlot.ImageSharp
         }
 
         /// <inheritdoc/>
-        public override OxySize MeasureText(string text, string fontFamily = null, double fontSize = 10, double fontWeight = 500)
+        public override OxySize MeasureText(string text, string? fontFamily = null, double fontSize = 10, double fontWeight = 500)
         {
-            return this.MeasureTextLoose(text, fontFamily, fontSize, fontWeight);
+            // TODO: should fontFamily be nullable?
+            return this.MeasureTextLoose(text, fontFamily!, fontSize, fontWeight);
         }
 
         /// <inheritdoc/>
@@ -390,24 +395,17 @@ namespace OxyPlot.ImageSharp
         }
 
         /// <inheritdoc/>
-        public override void DrawPolygon(IList<ScreenPoint> points, OxyColor fill, OxyColor stroke, double thickness, EdgeRenderingMode edgeRenderingMode, double[] dashArray, LineJoin lineJoin)
+        public override void DrawPolygon(IList<ScreenPoint> points, OxyColor fill, OxyColor stroke, double thickness, EdgeRenderingMode edgeRenderingMode, double[]? dashArray, LineJoin lineJoin)
         {
             var fillInvisible = !fill.IsVisible();
-            var strokeInvisible = !stroke.IsVisible() || thickness <= 0;
+            var strokeInvisible = this.IsStrokeInvisible(stroke, thickness);
 
             if ((fillInvisible && strokeInvisible) || points.Count < 2)
             {
                 return;
             }
 
-            var actualThickness = this.GetActualThickness(thickness, edgeRenderingMode);
-            var actualDashArray = dashArray != null
-                ? this.ConvertDashArray(dashArray, actualThickness)
-                : null;
-
-            Pen pen = actualDashArray != null
-                ? new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new SolidPen(ToRgba32(stroke), actualThickness);
+            Pen? pen = this.GetPen(stroke, thickness, dashArray, edgeRenderingMode, lineJoin);
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
 
@@ -425,6 +423,71 @@ namespace OxyPlot.ImageSharp
                     img.DrawPolygon(options, pen, actualPoints);
                 }
             });
+        }
+
+        /// <summary>
+        /// Determines whether the given color and thickness would be invisible.
+        /// </summary>
+        /// <param name="stroke">The stroke color.</param>
+        /// <param name="thickness">The stroke thickness (in device independent units, 1/96 inch).</param>
+        /// <param name="edgeRenderingMode">The edge rendering mode.</param>
+        /// <param name="dashArray">The dash array (in device independent units, 1/96 inch). Use <c>null</c> to get a solid line.</param>
+        /// <param name="lineJoin">The line join type.</param>
+        /// <returns>A pen, or null if the stroke would be invisible</returns>
+        private Pen? GetPen(OxyColor stroke, double thickness, double[]? dashArray, EdgeRenderingMode edgeRenderingMode, LineJoin lineJoin)
+        {
+            if (this.IsStrokeInvisible(stroke, thickness))
+                return null;
+
+            var actualThickness = this.GetActualThickness(thickness, edgeRenderingMode);
+            if (dashArray is not null)
+            {
+                var actualDashArray = this.ConvertDashArray(dashArray, actualThickness);
+                var actualJointStyle = this.GetLineJointStyle(lineJoin);
+
+                var penOptions = new PenOptions(ToRgba32(stroke), actualThickness, actualDashArray)
+                {
+                    JointStyle = actualJointStyle,
+                };
+
+                return new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray);
+            }
+
+            return new SolidPen(ToRgba32(stroke), actualThickness);
+        }
+
+        /// <summary>
+        /// Converts a <see cref="LineJoin" /> to a <see cref="JointStyle"/>.
+        /// </summary>
+        /// <param name="lineJoin">The line join type.</param>
+        /// <returns>The converted line join style.</returns>
+        protected JointStyle GetLineJointStyle(LineJoin lineJoin)
+        {
+            switch (lineJoin)
+            {
+                case LineJoin.Miter:
+                    return JointStyle.Miter;
+
+                case LineJoin.Bevel:
+                    return JointStyle.Square;
+
+                case LineJoin.Round:
+                    return JointStyle.Round;
+
+                default:
+                    return JointStyle.Miter;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the given color and thickness would be invisible.
+        /// </summary>
+        /// <param name="stroke">The stroke color.</param>
+        /// <param name="thickness">The stroke thickness (in device independent units, 1/96 inch).</param>
+        /// <returns>True if the stroke would be invisible; otherwise false</returns>
+        protected bool IsStrokeInvisible(OxyColor stroke, double thickness)
+        {
+            return !stroke.IsVisible() || thickness <= 0;
         }
 
         /// <inheritdoc/>
@@ -547,14 +610,14 @@ namespace OxyPlot.ImageSharp
             }
         }
 
-        private Font GetFontOrThrow(string fontFamily, double fontSize, FontStyle fontWeight, bool allowFallback = true)
+        private Font GetFontOrThrow(string? fontFamily, double fontSize, FontStyle fontWeight, bool allowFallback = true)
         {
             var family = this.GetFamilyOrFallbackOrThrow(fontFamily, allowFallback);
             var actualFontSize = this.NominalFontSizeToPoints(fontSize);
             return new Font(family, (float)actualFontSize, fontWeight);
         }
 
-        private FontFamily GetFamilyOrFallbackOrThrow(string fontFamily = null, bool allowFallback = true)
+        private FontFamily GetFamilyOrFallbackOrThrow(string? fontFamily = null, bool allowFallback = true)
         {
             if (fontFamily == null)
             {
