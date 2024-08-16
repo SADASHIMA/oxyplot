@@ -14,12 +14,11 @@ namespace OxyPlot.ImageSharp
     using System.IO;
     using System.Linq;
     using SixLabors.Fonts;
-    using SixLabors.Fonts.Exceptions;
     using SixLabors.ImageSharp;
+    using SixLabors.ImageSharp.Drawing;
+    using SixLabors.ImageSharp.Drawing.Processing;
     using SixLabors.ImageSharp.PixelFormats;
     using SixLabors.ImageSharp.Processing;
-    using SixLabors.Primitives;
-    using SixLabors.Shapes;
 
     /// <summary>
     /// Provides an implementation of IRenderContext which draws to a <see cref="Image"/>.
@@ -76,7 +75,7 @@ namespace OxyPlot.ImageSharp
             this.Dpi = (float)dpi;
             this.DpiScale = (float)(dpi / 96.0);
 
-            this.image.Mutate(img => img.BackgroundColor(ToRgba32(background)));
+            this.image.Mutate(img => img.BackgroundColor(ToColor(background)));
 
             this.RendersToScreen = false;
 
@@ -180,13 +179,13 @@ namespace OxyPlot.ImageSharp
             var offsetHeight = new PointF(boundsHeight * -sin, boundsHeight * cos);
 
             // determine the font metrids for this font size at 96 DPI
-            var actualDescent = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.Descender));
+            var actualDescent = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.Descender));
             var offsetDescent = new PointF(actualDescent * -sin, actualDescent * cos);
 
-            var actualLineHeight = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.LineHeight));
+            var actualLineHeight = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineHeight));
             var offsetLineHeight = new PointF(actualLineHeight * -sin, actualLineHeight * cos);
 
-            var actualLineGap = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.LineGap));
+            var actualLineGap = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineGap));
             var offsetLineGap = new PointF(actualLineGap * -sin, actualLineGap * cos);
 
             // find top of the whole text
@@ -230,11 +229,14 @@ namespace OxyPlot.ImageSharp
                 var lineBaseLineLeft = lineTop + offsetLineWidth * deltaX + offsetLineHeight + offsetDescent;
 
                 // this seems to produce consistent and correct results, but we have to rotate it manually, so render it at the origin for simplicity
-                var glyphsAtOrigin = TextBuilder.GenerateGlyphs(line, new PointF(0f, 0f), new RendererOptions(font, this.Dpi, this.Dpi)
+                var path = new PathBuilder();
+                path.AddLine(0, 0, 100000, 0); // TODO: this is obviously stupid
+                var glyphsAtOrigin = TextBuilder.GenerateGlyphs(line, path.Build(), new TextOptions(font)
                 {
+                    Dpi = this.Dpi,
                     HorizontalAlignment = HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Bottom, // sit on the line (baseline)
-                    ApplyKerning = true,
+                    KerningMode = KerningMode.Standard,
                 });
 
                 // translate and rotate into possition
@@ -245,7 +247,7 @@ namespace OxyPlot.ImageSharp
                 // draw the glyphs
                 this.Target.Mutate(img =>
                 {
-                    img.Fill(ToRgba32(fill), glyphs);
+                    img.Fill(new SolidBrush(ToColor(fill)), glyphs);
                 });
             }
         }
@@ -311,7 +313,7 @@ namespace OxyPlot.ImageSharp
             var doPad = interpolate;
 
             var srcRough = new Rectangle((int)Math.Floor(src.X), (int)Math.Floor(src.Y), (int)Math.Ceiling(src.Width + 3), (int)Math.Ceiling(src.Height + 3));
-            srcRough.Intersect(sourceImage.Bounds());
+            srcRough.Intersect(sourceImage.Bounds);
             var srcOffset = new PointF(srcRough.X - src.X, srcRough.Y - src.Y);
             srcOffset.Offset(0.5f, 0.5f); // texel alignment for resampler
             if (doPad)
@@ -336,36 +338,38 @@ namespace OxyPlot.ImageSharp
                     }
                 });
 
-                if (doPad)
-                {
-                    sourceImage[0, 0] = sourceImage[1, 1];
-                    sourceImage[sourceImage.Width - 1, 0] = sourceImage[sourceImage.Width - 2, 1];
-                    sourceImage[0, sourceImage.Height - 1] = sourceImage[1, sourceImage.Height - 2];
-                    sourceImage[sourceImage.Width - 1, sourceImage.Height - 1] = sourceImage[sourceImage.Width - 2, sourceImage.Height - 2];
+                // TODO: this was used to trick the sampler in the past; not sure if we can do a better job now:
+                // ImageSharp DrawImage now has overloads that let you specify a source or destination rectangle, but unforuntately not both
+                //if (doPad)
+                //{
+                //    sourceImage[0, 0] = sourceImage[1, 1];
+                //    sourceImage[sourceImage.Width - 1, 0] = sourceImage[sourceImage.Width - 2, 1];
+                //    sourceImage[0, sourceImage.Height - 1] = sourceImage[1, sourceImage.Height - 2];
+                //    sourceImage[sourceImage.Width - 1, sourceImage.Height - 1] = sourceImage[sourceImage.Width - 2, sourceImage.Height - 2];
 
-                    for (int x = 1; x < sourceImage.Width - 1; x++)
-                    {
-                        sourceImage[x, 0] = sourceImage[x, 1];
-                        sourceImage[x, sourceImage.Height - 1] = sourceImage[x, sourceImage.Height - 2];
-                    }
+                //    for (int x = 1; x < sourceImage.Width - 1; x++)
+                //    {
+                //        sourceImage[x, 0] = sourceImage[x, 1];
+                //        sourceImage[x, sourceImage.Height - 1] = sourceImage[x, sourceImage.Height - 2];
+                //    }
 
-                    for (int y = 1; y < sourceImage.Height - 1; y++)
-                    {
-                        sourceImage[0, y] = sourceImage[1, y];
-                        sourceImage[sourceImage.Width - 1, y] = sourceImage[sourceImage.Width - 2, y];
-                    }
-                }
+                //    for (int y = 1; y < sourceImage.Height - 1; y++)
+                //    {
+                //        sourceImage[0, y] = sourceImage[1, y];
+                //        sourceImage[sourceImage.Width - 1, y] = sourceImage[sourceImage.Width - 2, y];
+                //    }
+                //}
 
                 sourceImage.Mutate(img =>
                 {
                     img.Transform(rescale, resampler);
-                    destRough.Intersect(sourceImage.Bounds());
+                    destRough.Intersect(sourceImage.Bounds);
                     img.Crop(destRough);
                 });
 
                 this.Target.Mutate(img =>
                 {
-                    img.DrawImage(sourceImage, new Point((int)dest.X, (int)dest.Y), new GraphicsOptions(interpolate, (float)opacity));
+                    img.DrawImage(sourceImage, new Point(destRough.Left, destRough.Top), new GraphicsOptions() { Antialias = interpolate, BlendPercentage = (float)opacity });
                 });
             }
             catch (ImageProcessingException)
@@ -393,15 +397,18 @@ namespace OxyPlot.ImageSharp
                 ? this.ConvertDashArray(dashArray, actualThickness)
                 : null;
 
-            var pen = actualDashArray != null
-                ? new Pen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new Pen(ToRgba32(stroke), actualThickness);
+            Pen pen = actualDashArray != null
+                ? new PatternPen(ToColor(stroke), actualThickness, actualDashArray)
+                : new SolidPen(ToColor(stroke), actualThickness);
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
-            var options = new GraphicsOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
+            var options = new DrawingOptions()
+            {
+                GraphicsOptions = new GraphicsOptions() { Antialias = this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points) },
+            };
 
             this.Target.Mutate(img =>
             {
-                img.DrawLines(options, pen, actualPoints);
+                img.DrawLine(options, pen, actualPoints);
             });
         }
 
@@ -418,18 +425,27 @@ namespace OxyPlot.ImageSharp
                 ? this.ConvertDashArray(dashArray, actualThickness)
                 : null;
 
-            var pen = actualDashArray != null
-                ? new Pen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new Pen(ToRgba32(stroke), actualThickness);
-            var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
-            var options = new GraphicsOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
+            Pen pen = null;
+            if (thickness > 0)
+            {
+                pen = actualDashArray != null
+                    ? new PatternPen(ToColor(stroke), actualThickness, actualDashArray)
+                    : new SolidPen(ToColor(stroke), actualThickness);
+            }
 
-            var brush = Brushes.Solid(ToRgba32(fill));
+            var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
+            var options = new DrawingOptions()
+            {
+                GraphicsOptions = new GraphicsOptions() { Antialias = this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points) },
+            };
+
+            var brush = Brushes.Solid(ToColor(fill));
 
             this.Target.Mutate(img =>
             {
                 img.FillPolygon(options, brush, actualPoints);
-                img.DrawPolygon(options, pen, actualPoints);
+                if (pen is not null)
+                    img.DrawPolygon(options, pen, actualPoints);
             });
         }
 
@@ -478,13 +494,13 @@ namespace OxyPlot.ImageSharp
         }
 
         /// <summary>
-        /// Translates an <see cref="OxyColor"/> to a <see cref="Rgba32"/>.
+        /// Translates an <see cref="OxyColor"/> to a <see cref="Color"/>.
         /// </summary>
         /// <param name="color">The <see cref="OxyColor"/>.</param>
-        /// <returns>The resulting <see cref="Rgba32"/>.</returns>
-        private static Rgba32 ToRgba32(OxyColor color)
+        /// <returns>The resulting <see cref="Color"/>.</returns>
+        private static Color ToColor(OxyColor color)
         {
-            return new Rgba32(color.R, color.G, color.B, color.A);
+            return Color.FromRgba(color.R, color.G, color.B, color.A);
         }
 
         /// <summary>
@@ -542,7 +558,7 @@ namespace OxyPlot.ImageSharp
         /// <param name="rectangle">The region to copy.</param>
         private void Blit(Image<Rgba32> source, Image<Rgba32> destination, Rectangle rectangle)
         {
-            rectangle.Intersect(source.Bounds());
+            rectangle.Intersect(source.Bounds);
 
             for (int i = rectangle.Left; i < rectangle.Right; i++)
             {
@@ -571,7 +587,8 @@ namespace OxyPlot.ImageSharp
             FontFamily family;
             try
             {
-                family = SixLabors.Fonts.SystemFonts.Find(fontFamily);
+                // TODO: consider using TryGet so this code is less hideous
+                family = SixLabors.Fonts.SystemFonts.Get(fontFamily);
             }
             catch (FontFamilyNotFoundException primaryEx)
             {
@@ -582,7 +599,7 @@ namespace OxyPlot.ImageSharp
 
                 try
                 {
-                    family = SixLabors.Fonts.SystemFonts.Find(FallbackFontFamily);
+                    family = SixLabors.Fonts.SystemFonts.Get(FallbackFontFamily);
                 }
                 catch (FontFamilyNotFoundException fallbackEx)
                 {
@@ -611,8 +628,8 @@ namespace OxyPlot.ImageSharp
             var tight = this.MeasureTextTight(text, fontFamily, fontSize, fontWeight);
             var width = tight.Width;
 
-            var lineHeight = actualFontSize * this.MilliPointsToNominalResolution(font.LineHeight);
-            var lineGap = actualFontSize * this.MilliPointsToNominalResolution(font.LineGap);
+            var lineHeight = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineHeight);
+            var lineGap = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineGap);
             var lineCount = CountLines(text);
 
             var height = (lineHeight * lineCount) + (lineGap * (lineCount - 1));
@@ -635,7 +652,13 @@ namespace OxyPlot.ImageSharp
             var font = this.GetFontOrThrow(fontFamily, fontSize, this.ToFontStyle(fontWeight));
             var actualFontSize = this.NominalFontSizeToPoints(fontSize);
 
-            var result = TextMeasurer.Measure(text, new RendererOptions(font, this.Dpi));
+            var result = TextMeasurer.MeasureSize(text, new TextOptions(font)
+            {
+                Dpi = this.Dpi,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Bottom, // sit on the line (baseline)
+                KerningMode = KerningMode.Standard,
+            });
             return new OxySize(this.ConvertBack(result.Width), this.ConvertBack(result.Height));
         }
 
