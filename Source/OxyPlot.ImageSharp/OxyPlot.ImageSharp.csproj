@@ -7,12 +7,13 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <NoWarn>$(NoWarn);NU5104</NoWarn>
+        <LangVersion>9</LangVersion>
+        <NoWarn>$(NoWarn)</NoWarn>
         <WarningsAsErrors />
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="SixLabors.ImageSharp" Version="2.1.9" />
-        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta15" />
+        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\OxyPlot\OxyPlot.csproj" />

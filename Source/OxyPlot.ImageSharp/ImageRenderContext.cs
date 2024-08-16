@@ -181,13 +181,13 @@ namespace OxyPlot.ImageSharp
             var offsetHeight = new PointF(boundsHeight * -sin, boundsHeight * cos);
 
             // determine the font metrids for this font size at 96 DPI
-            var actualDescent = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.Descender));
+            var actualDescent = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.Descender));
             var offsetDescent = new PointF(actualDescent * -sin, actualDescent * cos);
 
-            var actualLineHeight = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.LineHeight));
+            var actualLineHeight = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineHeight));
             var offsetLineHeight = new PointF(actualLineHeight * -sin, actualLineHeight * cos);
 
-            var actualLineGap = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.LineGap));
+            var actualLineGap = this.Convert(actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineGap));
             var offsetLineGap = new PointF(actualLineGap * -sin, actualLineGap * cos);
 
             // find top of the whole text
@@ -377,15 +377,15 @@ namespace OxyPlot.ImageSharp
                 ? this.ConvertDashArray(dashArray, actualThickness)
                 : null;
 
-            var pen = actualDashArray != null
-                ? new Pen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new Pen(ToRgba32(stroke), actualThickness);
+            Pen pen = actualDashArray != null
+                ? new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray)
+                : new SolidPen(ToRgba32(stroke), actualThickness);
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
 
             this.Target.Mutate(img =>
             {
-                img.DrawLines(options, pen, actualPoints);
+                img.DrawLine(options, pen, actualPoints);
             });
         }
 
@@ -405,10 +405,9 @@ namespace OxyPlot.ImageSharp
                 ? this.ConvertDashArray(dashArray, actualThickness)
                 : null;
 
-            var pen = strokeInvisible ? null :
-                actualDashArray != null
-                ? new Pen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new Pen(ToRgba32(stroke), actualThickness);
+            Pen pen = actualDashArray != null
+                ? new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray)
+                : new SolidPen(ToRgba32(stroke), actualThickness);
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
 
@@ -606,8 +605,8 @@ namespace OxyPlot.ImageSharp
             var tight = this.MeasureTextTight(text, fontFamily, fontSize, fontWeight);
             var width = tight.Width;
 
-            var lineHeight = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.LineHeight);
-            var lineGap = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.LineGap);
+            var lineHeight = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineHeight);
+            var lineGap = actualFontSize * this.MilliPointsToNominalResolution(font.FontMetrics.VerticalMetrics.LineGap);
             var lineCount = CountLines(text);
 
             var height = (lineHeight * lineCount) + (lineGap * (lineCount - 1));
@@ -630,7 +629,7 @@ namespace OxyPlot.ImageSharp
             var font = this.GetFontOrThrow(fontFamily, fontSize, this.ToFontStyle(fontWeight));
             var actualFontSize = this.NominalFontSizeToPoints(fontSize);
 
-            var result = TextMeasurer.Measure(text, new TextOptions(font) { Dpi = this.Dpi });
+            var result = TextMeasurer.MeasureSize(text, new TextOptions(font) { Dpi = this.Dpi });
             return new OxySize(this.ConvertBack(result.Width), this.ConvertBack(result.Height));
         }
 
