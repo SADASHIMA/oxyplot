@@ -57,6 +57,7 @@ All notable changes to this project will be documented in this file.
 - Add `AxisPreference` to `PlotManipulator`
 - Add MinimumMajorIntervalCount and MaximumMajorIntervalCount Axis Properties (#24)
 - Add VisualStudioToolsManifest.xml to add components to the Visual Studio Designer toolbox (#1446)
+- Add support for `LineJoin` in OxyPlot.ImageSharp
 
 ### Changed
 - Change default `MinimumSegmentLength` to `2` and remove limits for series and annotations with simple geometry (#1853)

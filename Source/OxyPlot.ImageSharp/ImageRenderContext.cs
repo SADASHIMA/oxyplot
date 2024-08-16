@@ -372,19 +372,18 @@ namespace OxyPlot.ImageSharp
         /// <inheritdoc/>
         public override void DrawLine(IList<ScreenPoint> points, OxyColor stroke, double thickness, EdgeRenderingMode edgeRenderingMode, double[] dashArray, LineJoin lineJoin)
         {
-            if (points.Count < 2 || !stroke.IsVisible() || thickness <= 0)
+            if (points.Count < 2)
             {
                 return;
             }
 
-            var actualThickness = this.GetActualThickness(thickness, edgeRenderingMode);
-            var actualDashArray = dashArray != null
-                ? this.ConvertDashArray(dashArray, actualThickness)
-                : null;
+            var pen = this.GetPen(stroke, thickness, dashArray, edgeRenderingMode, lineJoin);
 
-            Pen pen = actualDashArray != null
-                ? new PatternPen(ToRgba32(stroke), actualThickness, actualDashArray)
-                : new SolidPen(ToRgba32(stroke), actualThickness);
+            if (pen is null)
+            {
+                return;
+            }
+
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
 
@@ -397,19 +396,21 @@ namespace OxyPlot.ImageSharp
         /// <inheritdoc/>
         public override void DrawPolygon(IList<ScreenPoint> points, OxyColor fill, OxyColor stroke, double thickness, EdgeRenderingMode edgeRenderingMode, double[]? dashArray, LineJoin lineJoin)
         {
-            var fillInvisible = !fill.IsVisible();
-            var strokeInvisible = this.IsStrokeInvisible(stroke, thickness);
-
-            if ((fillInvisible && strokeInvisible) || points.Count < 2)
+            if (points.Count < 2)
             {
                 return;
             }
 
-            Pen? pen = this.GetPen(stroke, thickness, dashArray, edgeRenderingMode, lineJoin);
+            var pen = this.GetPen(stroke, thickness, dashArray, edgeRenderingMode, lineJoin);
+            var brush = this.GetBrush(fill);
+
+            if (pen is null && brush is null)
+            {
+                return;
+            }
+
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
-
-            var brush = fillInvisible ? null : Brushes.Solid(ToRgba32(fill));
 
             this.Target.Mutate(img =>
             {
@@ -426,18 +427,35 @@ namespace OxyPlot.ImageSharp
         }
 
         /// <summary>
-        /// Determines whether the given color and thickness would be invisible.
+        /// Gets a <see cref="Brush"/>.
+        /// </summary>
+        /// <param name="fill">The fill color.</param>
+        /// <returns>A <see cref="Brush"/>, or <code>null</code> if the fill would be invisible.</returns>
+        private Brush? GetBrush(OxyColor fill)
+        {
+            if (!fill.IsVisible())
+            {
+                return null;
+            }
+
+            return Brushes.Solid(ToRgba32(fill));
+        }
+
+        /// <summary>
+        /// Gets a <see cref="Pen"/>.
         /// </summary>
         /// <param name="stroke">The stroke color.</param>
         /// <param name="thickness">The stroke thickness (in device independent units, 1/96 inch).</param>
         /// <param name="edgeRenderingMode">The edge rendering mode.</param>
         /// <param name="dashArray">The dash array (in device independent units, 1/96 inch). Use <c>null</c> to get a solid line.</param>
         /// <param name="lineJoin">The line join type.</param>
-        /// <returns>A pen, or null if the stroke would be invisible</returns>
+        /// <returns>A <see cref="Pen"/>, or <code>null</code> if the stroke would be invisible.</returns>
         private Pen? GetPen(OxyColor stroke, double thickness, double[]? dashArray, EdgeRenderingMode edgeRenderingMode, LineJoin lineJoin)
         {
             if (this.IsStrokeInvisible(stroke, thickness))
+            {
                 return null;
+            }
 
             var actualThickness = this.GetActualThickness(thickness, edgeRenderingMode);
             if (dashArray is not null)
