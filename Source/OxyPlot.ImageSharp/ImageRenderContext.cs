@@ -387,10 +387,34 @@ namespace OxyPlot.ImageSharp
             var actualPoints = this.GetActualPoints(points, thickness, edgeRenderingMode).ToArray();
             var options = this.CreateDrawingOptions(this.ShouldUseAntiAliasingForLine(edgeRenderingMode, points));
 
+            if (this.PointsAreAllTheSame(actualPoints))
+            {
+                // return early if all the points are the same, as this causes a crash in ImageSharp
+                return;
+            }
+
             this.Target.Mutate(img =>
             {
                 img.DrawLine(options, pen, actualPoints);
             });
+        }
+
+        /// <summary>
+        /// Determines whether all the points in the given collection are the same.
+        /// </summary>
+        /// <param name="points">The collection of points to compare.</param>
+        /// <returns><code>true</code> if all the points compare equal, otherwise <code>false</code>.</returns>
+        private bool PointsAreAllTheSame(IList<PointF> points)
+        {
+            for (int i = 1; i < points.Count; i++)
+            {
+                if (points[i] != points[0])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <inheritdoc/>
