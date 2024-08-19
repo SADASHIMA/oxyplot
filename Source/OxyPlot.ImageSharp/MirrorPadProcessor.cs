@@ -1,11 +1,22 @@
-﻿namespace OxyPlot.ImageSharp
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="MirrorPadProcessor.cs" company="OxyPlot">
+//   Copyright (c) 2014 OxyPlot contributors
+// </copyright>
+// <summary>
+//   Provides an an ImageProcessor that performs a single-pizel mirror/clamp along the edge of an image.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+#nullable enable
+
+namespace OxyPlot.ImageSharp
 {
     using SixLabors.ImageSharp;
     using SixLabors.ImageSharp.PixelFormats;
     using SixLabors.ImageSharp.Processing.Processors;
 
     /// <summary>
-    /// Performs a 'mirror' (clamp) along the edge of the image, which is used to assist with drawing non-pixel aligned and interpolate images.
+    /// Performs a single-pizel mirror/clamp along the edge of the image, which is used to assist with drawing non-pixel aligned and interpolate images.
     /// </summary>
     internal class MirrorPadProcessor : IImageProcessor
     {
