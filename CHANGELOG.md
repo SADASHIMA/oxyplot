@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [2.2.0] - 2024-08-24
 
 ### Added
 - Example to demonstrate BarSeries HitTest bug (#2038)
@@ -517,6 +517,8 @@ All notable changes to this project will be documented in this file.
 - PngExporter text formatting (#170)
 
 [Unreleased]: https://github.com/oxyplot/oxyplot/compare/v2.1.0...HEAD
+[2.2.0]: https://github.com/oxyplot/oxyplot/compare/v2.1.2...v2.2.0
+[2.1.2]: https://github.com/oxyplot/oxyplot/compare/v2.1.0...v2.1.2
 [2.1.0]: https://github.com/oxyplot/oxyplot/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/oxyplot/oxyplot/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/oxyplot/oxyplot/compare/v0.2014.1.546...v1.0.0
