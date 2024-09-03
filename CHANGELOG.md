@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.2.0] - 2024-08-24
+## [2.2.0] - 2024-09-03
 
 ### Added
 - Example to demonstrate BarSeries HitTest bug (#2038)
