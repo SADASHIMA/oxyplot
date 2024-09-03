@@ -178,7 +178,6 @@ namespace OxyPlot.ImageSharp
             var sin = (float)Math.Sin(rotation * Math.PI / 180.0);
 
             // measure bounds of the whole text (we only need the height)
-            // TODO: should fontFamily be nullable?
             var bounds = this.MeasureTextLoose(text, fontFamily!, fontSize, fontWeight);
             var boundsHeight = this.Convert(bounds.Height);
             var offsetHeight = new PointF(boundsHeight * -sin, boundsHeight * cos);
@@ -225,7 +224,6 @@ namespace OxyPlot.ImageSharp
                 }
 
                 // measure bounds of just the line (we only need the width)
-                // TODO: should fontFamily be nullable?
                 var lineBounds = this.MeasureTextLoose(line, fontFamily!, fontSize, fontWeight);
                 var lineBoundsWidth = this.Convert(lineBounds.Width);
                 var offsetLineWidth = new PointF(lineBoundsWidth * cos, lineBoundsWidth * sin);
@@ -260,7 +258,6 @@ namespace OxyPlot.ImageSharp
         /// <inheritdoc/>
         public override OxySize MeasureText(string text, string? fontFamily = null, double fontSize = 10, double fontWeight = 500)
         {
-            // TODO: should fontFamily be nullable?
             return this.MeasureTextLoose(text, fontFamily!, fontSize, fontWeight);
         }
 
