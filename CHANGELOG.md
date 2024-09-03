@@ -47,6 +47,7 @@ All notable changes to this project will be documented in this file.
 - SkiaSharp - Fix use of obsolete functions (#1937)
 - Dashed lines are solid when exporting via SkiaSharp.SvgExporter (#1674)
 - DateTimeAxis.ToDateTime doesn't behave as intended in .NET 8 (#2061) 
+- FontFamily ignored by DrawMultilineText
 
 ## [2.1.2] - 2022-12-03
 

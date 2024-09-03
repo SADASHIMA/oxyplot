@@ -207,6 +207,7 @@ namespace OxyPlot
                     new ScreenPoint(point.X, point.Y + (i * dy)),
                     lines[i],
                     color,
+                    fontFamily: fontFamily,
                     fontWeight: fontWeight,
                     fontSize: fontSize);
             }
